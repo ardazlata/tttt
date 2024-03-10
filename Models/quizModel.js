@@ -47,10 +47,11 @@ Quiz.updateQuiz = async (quizId, updatedQuiz, result) => {
     console.log("updated quiz with id: ", quizId);
     result(null, res);
   } catch (error) {
-    console.log("error: ", err);
-    result(err, null);
+    console.log("error: ", error);
+    result(error, null);
     return;
   }
 };
 
 module.exports = Quiz;
+
