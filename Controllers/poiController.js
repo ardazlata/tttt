@@ -1,48 +1,68 @@
-const { getDownloadURL, ref, uploadBytes } = require('firebase/storage');
-const { storage } = require('../Config/firebaseConfig');
+const POIModel = require('../Models/poiModel');
+const { storage: firebaseStorage } = require('../Config/firebaseConfig');
+const { ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
-const POIModel = require("../Models/poiModel");
+// Dosyaları bellekte saklamak için multer'ın memoryStorage'ını kullanın
+const multer = require('multer');
+const multerStorage = multer.memoryStorage();
 
-async function uploadToFirebaseStorage(file) {
-  try {
-    const storageRef = ref(storage, 'uploads/' + file.originalname);
-    await uploadBytes(storageRef, file.buffer);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-  } catch (error) {
-    throw error;
-  }
-}
-
-exports.createPOI = async (req, res) => {
-  try {
-    const { route_id, name, latitude, longitude, description } = req.body;
-    
-    // Fotoğrafı Firebase Storage'a yükle
-    const photoUrl = await uploadToFirebaseStorage(req.file);
-    
-    // POI objesini oluştur
-    const newPOI = {
-      route_id,
-      name,
-      latitude,
-      longitude,
-      description,
-      photo_url: photoUrl // photo_url olarak güncellendi
-    };
-
-    // Oluşturulan POI'yi veritabanına kaydet
-    const createdPOI = await POIModel.createPOI(newPOI);
-    
-    // Başarılı yanıt gönder
-    res.status(200).send({ message: "New point added successfully" });
-  } catch (error) {
-    // Hata durumunda uygun şekilde yanıt gönder
-    res.status(500).send({
-      message: error.message || "Some error occurred while creating the POI.",
-    });
+// Dosya filtreleme fonksiyonu
+const fileFilter = (req, file, cb) => {
+  // Kabul edilen resim MIME türleri
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); // Dosyayı kabul et
+  } else {
+    cb(new Error('Yalnızca resim dosyaları kabul edilir'), false); // Dosyayı reddet
   }
 };
+
+// Multer'ı yapılandır
+const upload = multer({ storage: multerStorage, fileFilter: fileFilter }).single('photo_url');
+
+// POI oluşturma
+exports.createPOI = async (req, res) => {
+    const { route_id, name, latitude, longitude, description } = req.body;
+
+    // Dosya yükleme işlemi
+    upload(req, res, async function(err) {
+        if (err) {
+            // Dosya yükleme hatasıyla karşılaşıldığında burası çalışır
+            console.error(err);
+            return res.status(500).send({ message: "Dosya yükleme hatası." });
+        }
+
+        // Dosya yükleme başarılı olduğunda devam edilir
+        try {
+            const storageRef = ref(firebaseStorage, 'uploads/' + req.file.originalname);
+            await uploadBytes(storageRef, req.file.buffer);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // POI objesini oluştur
+            const newPOI = {
+                route_id,
+                name,
+                latitude,
+                longitude,
+                description,
+                photo_url: downloadURL // Dosya URL'si olarak güncellendi
+            };
+
+            // Oluşturulan POI'yi veritabanına kaydet
+            const createdPOI = await POIModel.createPOI(newPOI);
+
+            // Başarılı yanıt gönder
+            return res.status(200).send({ message: "Yeni nokta başarıyla eklendi." });
+        } catch (error) {
+            // Hata durumunda uygun şekilde yanıt gönder
+            res.status(500).send({
+                message: error.message || "POI oluşturulurken bir hata oluştu.",
+            });
+        }
+    });
+};
+
 
 
 exports.getAllPOIs = async (req, res) => {

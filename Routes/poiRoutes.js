@@ -9,7 +9,7 @@ const POIController = require('../Controllers/poiController');
 router.get('/', POIController.getAllPOIs);
 
 // Yeni POI oluştur
-router.post('/', upload.single('photo'), POIController.createPOI);
+router.post('/', upload.single('photo_url'), POIController.createPOI);
 
 // Belirli bir rota ID'sine göre POI'leri listele
 router.get('/:routeId', POIController.getPOIsByRoute);
@@ -19,6 +19,5 @@ router.put('/:poiId', POIController.updatePOI);
 
 // Belirli bir POI'yi sil
 router.delete('/:poiId', POIController.deletePOI);
-
 
 module.exports = router;
