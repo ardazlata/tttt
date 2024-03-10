@@ -6,19 +6,19 @@ const upload = multer({ storage: storage });
 const POIController = require('../Controllers/poiController');
 
 // Tüm POI'leri listele
-router.get('/', poiController.getAllPOIs);
+router.get('/', POIController.getAllPOIs);
 
 // Yeni POI oluştur
 router.post('/', upload.single('photo'), POIController.createPOI);
 
 // Belirli bir rota ID'sine göre POI'leri listele
-router.get('/:routeId', poiController.getPOIsByRoute);
+router.get('/:routeId', POIController.getPOIsByRoute);
 
 // Belirli bir POI'yi güncelle
-router.put('/:poiId', poiController.updatePOI);
+router.put('/:poiId', POIController.updatePOI);
 
 // Belirli bir POI'yi sil
-router.delete('/:poiId', poiController.deletePOI);
+router.delete('/:poiId', POIController.deletePOI);
 
 
 module.exports = router;

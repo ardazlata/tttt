@@ -1,5 +1,5 @@
 const { getDownloadURL, ref, uploadBytes } = require('firebase/storage');
-const { storage } = require('../firebaseConfig');
+const { storage } = require('../Config/firebaseConfig');
 
 const POIModel = require("../Models/poiModel");
 
