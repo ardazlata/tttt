@@ -1,10 +1,21 @@
 const db = require("../Config/dbConfig");
 
 const POI = {};
+
 // poi model create
 POI.createPOI = async (newPOI) => {
   try {
-    await db.query("INSERT INTO POIs SET ?", newPOI);
+    const res = await db.query("INSERT INTO POIs SET ?", newPOI);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Fotoğraf ekleme işlevi
+POI.createPhoto = async (poiId, photoUrl) => {
+  try {
+    await db.query("INSERT INTO photos (poi_id, photo_url) VALUES (?, ?)", [poiId, photoUrl]);
   } catch (error) {
     throw error;
   }

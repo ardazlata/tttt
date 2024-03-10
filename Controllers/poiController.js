@@ -1,35 +1,49 @@
+const { getDownloadURL, ref, uploadBytes } = require('firebase/storage');
+const { storage } = require('../firebaseConfig');
+
 const POIModel = require("../Models/poiModel");
 
-exports.createPOI = async (req, res) => {
-  // Request body'den POI bilgilerini al
-  const { route_id, name, latitude, longitude, description } = req.body;
-
-  // POI bilgilerini kontrol et
-  if (!route_id || !name || !latitude || !longitude) {
-    return res.status(400).send({
-      message: "Required fields can not be empty!",
-    });
-  }
-
-  // POI object content
-  const newPOI = {
-    route_id,
-    name,
-    latitude,
-    longitude,
-    description,
-  };
-
-  // Modeli kullanarak yeni POI'yi veritabanına kaydet
+async function uploadToFirebaseStorage(file) {
   try {
-    await POIModel.createPOI(newPOI);
-    res.status(200).send({ messgae: "New point added successfully" });
+    const storageRef = ref(storage, 'uploads/' + file.originalname);
+    await uploadBytes(storageRef, file.buffer);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   } catch (error) {
+    throw error;
+  }
+}
+
+exports.createPOI = async (req, res) => {
+  try {
+    const { route_id, name, latitude, longitude, description } = req.body;
+    
+    // Fotoğrafı Firebase Storage'a yükle
+    const photoUrl = await uploadToFirebaseStorage(req.file);
+    
+    // POI objesini oluştur
+    const newPOI = {
+      route_id,
+      name,
+      latitude,
+      longitude,
+      description,
+      photo_url: photoUrl // photo_url olarak güncellendi
+    };
+
+    // Oluşturulan POI'yi veritabanına kaydet
+    const createdPOI = await POIModel.createPOI(newPOI);
+    
+    // Başarılı yanıt gönder
+    res.status(200).send({ message: "New point added successfully" });
+  } catch (error) {
+    // Hata durumunda uygun şekilde yanıt gönder
     res.status(500).send({
       message: error.message || "Some error occurred while creating the POI.",
     });
   }
 };
+
 
 exports.getAllPOIs = async (req, res) => {
   try {
@@ -64,20 +78,19 @@ exports.getPOIsByRoute = async (req, res) => {
 // -------------------------------------------------------
 
 // Belirli bir POI'yi güncelle
-exports.updatePOI = (req, res) => {
+exports.updatePOI = async (req, res) => {
   const poiId = req.params.poiId;
   const updatedPOI = req.body;
 
   // POI'yi güncelle
-  POIModel.updatePOI(poiId, updatedPOI, (error, data) => {
-    if (error) {
-      res.status(500).send({
-        message: error.message || "Some error occurred while updating the POI.",
-      });
-    } else {
-      res.send(data);
-    }
-  });
+  try {
+    await POIModel.updatePOI(poiId, updatedPOI);
+    res.status(200).send({ message: "POI updated successfully" });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || "Some error occurred while updating the POI.",
+    });
+  }
 };
 
 // Belirli bir POI'yi sil

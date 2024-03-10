@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const poiController = require('../Controllers/poiController');
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+const POIController = require('../Controllers/poiController');
 
 // Tüm POI'leri listele
 router.get('/', poiController.getAllPOIs);
 
 // Yeni POI oluştur
-router.post('/', poiController.createPOI);
+router.post('/', upload.single('photo'), POIController.createPOI);
 
 // Belirli bir rota ID'sine göre POI'leri listele
 router.get('/:routeId', poiController.getPOIsByRoute);
